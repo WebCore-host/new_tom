@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08090a;
+      --panel: #0f1012;
+      --bar: #13151a;
+      --border: #1e2028;
+      --text: #e2e0da;
+      --muted: #484c58;
+      --accent: #4af0a8;
+      --accent2: #f0a84a;
+      --danger: #f05a4a;
+      --radius: 8px;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; }
+
+    #app { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+
+    /* Top bar */
+    #topbar {
+      background: var(--bar);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+
+    .logo { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; user-select: none; }
+    .logo span { color: var(--muted); }
+
+    .nav-btns { display: flex; gap: 4px; }
+
+    .nav-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0;
+    }
+    .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+    .nav-btn svg { width: 14px; height: 14px; }
+
+    #url-form {
+      flex: 1; display: flex; gap: 6px; align-items: center;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0 10px; transition: border-color 0.2s;
+    }
+    #url-form:focus-within { border-color: var(--accent); }
+
+    .bar-icon { color: var(--muted); flex-shrink: 0; display: flex; align-items: center; }
+    .bar-icon svg { width: 13px; height: 13px; }
+
+    #url-input {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-family: var(--mono); font-size: 12px; height: 32px; outline: none;
+      letter-spacing: 0.02em; min-width: 0;
+    }
+    #url-input::placeholder { color: var(--muted); }
+
+    #go-btn {
+      background: var(--accent); border: none; color: #08090a;
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      padding: 5px 12px; border-radius: 5px; cursor: pointer;
+      letter-spacing: 0.06em; transition: opacity 0.15s; flex-shrink: 0;
+    }
+    #go-btn:hover { opacity: 0.8; }
+
+    .engine-pills { display: flex; gap: 4px; }
+    .engine-pill {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-family: var(--mono); font-size: 10px; padding: 4px 9px;
+      border-radius: 5px; cursor: pointer; letter-spacing: 0.04em; transition: all 0.15s; white-space: nowrap;
+    }
+    .engine-pill:hover { border-color: var(--accent2); color: var(--accent2); }
+    .engine-pill.active { border-color: var(--accent2); color: var(--accent2); background: rgba(240,168,74,0.08); }
+
+    /* Main */
+    #main { display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+
+    /* Sidebar */
+    #sidebar { background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+
+    #search-form { padding: 14px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+
+    #search-input {
+      flex: 1; background: var(--bar); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: 12px;
+      padding: 8px 12px; border-radius: 6px; outline: none; transition: border-color 0.2s;
+    }
+    #search-input:focus { border-color: var(--accent); }
+    #search-input::placeholder { color: var(--muted); }
+
+    #search-btn {
+      background: var(--accent); border: none; color: #08090a;
+      width: 36px; border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s;
+    }
+    #search-btn:hover { opacity: 0.8; }
+    #search-btn svg { width: 15px; height: 15px; }
+
+    #results-area { flex: 1; overflow-y: auto; padding: 10px; }
+    #results-area::-webkit-scrollbar { width: 3px; }
+    #results-area::-webkit-scrollbar-thumb { background: var(--border); }
+
+    #sidebar-home { padding: 20px 14px; display: flex; flex-direction: column; gap: 20px; }
+
+    .sidebar-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-family: var(--mono); }
+
+    .quick-links { display: flex; flex-direction: column; gap: 2px; }
+
+    .quick-link {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+      border-radius: 6px; cursor: pointer; text-decoration: none;
+      color: var(--muted); font-size: 13px; transition: all 0.15s; border: 1px solid transparent;
+    }
+    .quick-link:hover { color: var(--text); background: var(--bar); border-color: var(--border); }
+    .quick-link .ql-icon { width: 22px; height: 22px; border-radius: 4px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; font-family: var(--mono); }
+    .quick-link .ql-name { font-family: var(--mono); font-size: 12px; }
+
+    .result-item { padding: 10px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; margin-bottom: 4px; }
+    .result-item:hover { background: var(--bar); border-color: var(--border); }
+    .result-item.active { background: rgba(74,240,168,0.05); border-color: rgba(74,240,168,0.2); }
+
+    .result-domain { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-bottom: 3px; }
+    .result-title { font-size: 13px; color: var(--text); font-weight: 500; line-height: 1.35; margin-bottom: 4px; }
+    .result-snippet { font-size: 11px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .results-header { font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 4px 10px 10px; letter-spacing: 0.06em; }
+
+    /* Viewport */
+    #viewport { position: relative; background: #fff; overflow: hidden; }
+
+    #site-frame { width: 100%; height: 100%; border: none; display: none; }
+
+    /* Homepage */
+    #homepage {
+      width: 100%; height: 100%; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+    }
+
+    .home-wordmark { font-family: var(--mono); font-size: 48px; color: var(--accent); letter-spacing: -0.02em; line-height: 1; }
+    .home-wordmark::after { content: '_'; animation: blink 1.1s step-end infinite; color: var(--accent2); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .home-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.14em; text-transform: uppercase; }
+
+    .home-search { display: flex; gap: 10px; width: 100%; max-width: 480px; }
+    .home-search input {
+      flex: 1; background: var(--panel); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: 13px;
+      padding: 12px 18px; border-radius: 8px; outline: none; transition: border-color 0.2s;
+    }
+    .home-search input:focus { border-color: var(--accent); }
+    .home-search input::placeholder { color: var(--muted); }
+    .home-search button {
+      background: var(--accent); border: none; color: #08090a;
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      padding: 12px 20px; border-radius: 8px; cursor: pointer; letter-spacing: 0.06em; transition: opacity 0.15s;
+    }
+    .home-search button:hover { opacity: 0.8; }
+    .home-engines { display: flex; gap: 8px; }
+
+    /* Load bar */
+    #load-bar { position: absolute; top: 0; left: 0; height: 2px; background: var(--accent); width: 0%; transition: width 0.3s ease; z-index: 5; display: none; }
+    #load-bar.active { display: block; }
+
+    #statusbar { position: absolute; bottom: 8px; left: 12px; font-family: var(--mono); font-size: 10px; color: var(--muted); pointer-events: none; letter-spacing: 0.04em; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="logo">NX<span>/</span></div>
+    <div class="nav-btns">
+      <button class="nav-btn" id="btn-back" disabled title="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="nav-btn" id="btn-forward" disabled title="Forward">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="nav-btn" id="btn-refresh" title="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+      <button class="nav-btn" id="btn-home" title="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </button>
+    </div>
+    <form id="url-form" onsubmit="return false;">
+      <span class="bar-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input type="text" id="url-input" placeholder="Search or enter URL…" autocomplete="off" spellcheck="false" />
+      <button type="submit" id="go-btn">GO</button>
+    </form>
+    <div class="engine-pills">
+      <button class="engine-pill active" data-engine="google">Google</button>
+      <button class="engine-pill" data-engine="bing">Bing</button>
+      <button class="engine-pill" data-engine="ddg">DDG</button>
+      <button class="engine-pill" data-engine="brave">Brave</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="sidebar">
+      <form id="search-form" onsubmit="return false;">
+        <input type="text" id="search-input" placeholder="Search the web…" autocomplete="off" />
+        <button type="submit" id="search-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </form>
+      <div id="results-area">
+        <div id="sidebar-home">
+          <div>
+            <div class="sidebar-label">Quick Access</div>
+            <div class="quick-links" id="quick-links"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="viewport">
+      <div id="load-bar"></div>
+      <div id="homepage">
+        <div>
+          <div class="home-wordmark">nexus</div>
+          <div class="home-sub" style="margin-top:8px;text-align:center;">browser within browser</div>
+        </div>
+        <div class="home-search">
+          <input type="text" id="home-search-input" placeholder="Search or enter a URL…" autocomplete="off" />
+          <button id="home-search-btn">SEARCH</button>
+        </div>
+        <div class="home-engines" id="home-engines"></div>
+      </div>
+      <iframe id="site-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      <div id="statusbar"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentUrl = '';
+  let currentEngine = 'google';
+  const navHistory = [];
+  let historyIndex = -1;
+
+  const quickLinks = [
+    { name: 'Wikipedia',  url: 'https://en.wikipedia.org',        icon: 'W'   },
+    { name: 'GitHub',     url: 'https://github.com',              icon: 'GH'  },
+    { name: 'MDN Docs',   url: 'https://developer.mozilla.org',   icon: 'MDN' },
+    { name: 'HackerNews', url: 'https://news.ycombinator.com',    icon: 'HN'  },
+    { name: 'Reddit',     url: 'https://old.reddit.com',          icon: 'R'   },
+    { name: 'Archive',    url: 'https://archive.org',             icon: 'A'   },
+  ];
+
+  const engines = {
+    google: { label: 'Google', search: q => `https://www.google.com/search?q=${encodeURIComponent(q)}` },
+    bing:   { label: 'Bing',   search: q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`   },
+    ddg:    { label: 'DDG',    search: q => `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}` },
+    brave:  { label: 'Brave',  search: q => `https://search.brave.com/search?q=${encodeURIComponent(q)}` },
+  };
+
+  const frame       = document.getElementById('site-frame');
+  const homepage    = document.getElementById('homepage');
+  const urlInput    = document.getElementById('url-input');
+  const searchInput = document.getElementById('search-input');
+  const loadBar     = document.getElementById('load-bar');
+  const statusbar   = document.getElementById('statusbar');
+  const resultsArea = document.getElementById('results-area');
+  const btnBack     = document.getElementById('btn-back');
+  const btnForward  = document.getElementById('btn-forward');
+
+  // Quick links
+  const qlContainer = document.getElementById('quick-links');
+  quickLinks.forEach(({ name, url, icon }) => {
+    const el = document.createElement('a');
+    el.className = 'quick-link';
+    el.href = '#';
+    el.innerHTML = `<span class="ql-icon">${icon}</span><span class="ql-name">${name}</span>`;
+    el.addEventListener('click', e => { e.preventDefault(); navigate(url); });
+    qlContainer.appendChild(el);
+  });
+
+  // Engine pills (topbar)
+  document.querySelectorAll('.engine-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentEngine = btn.dataset.engine;
+      document.querySelectorAll('.engine-pill').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll(`[data-engine="${btn.dataset.engine}"]`).forEach(b => b.classList.add('active'));
+    });
+  });
+
+  // Engine pills (homepage)
+  const homeEngines = document.getElementById('home-engines');
+  Object.entries(engines).forEach(([key, val]) => {
+    const btn = document.createElement('button');
+    btn.className = 'engine-pill' + (key === currentEngine ? ' active' : '');
+    btn.textContent = val.label;
+    btn.dataset.engine = key;
+    btn.addEventListener('click', () => {
+      currentEngine = key;
+      document.querySelectorAll('.engine-pill').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll(`[data-engine="${key}"]`).forEach(b => b.classList.add('active'));
+    });
+    homeEngines.appendChild(btn);
+  });
+
+  function resolveUrl(input) {
+    input = input.trim();
+    if (!input) return null;
+    if (/^https?:\/\//i.test(input)) return input;
+    if (/^[a-z0-9-]+\.[a-z]{2,}/i.test(input)) return 'https://' + input;
+    return null;
+  }
+
+  function proxyUrl(url) {
+    return `/proxy/${url}`;
+  }
+
+  function navigate(input, addToHistory = true) {
+    const url = resolveUrl(input);
+    if (!url) { search(input); return; }
+
+    currentUrl = url;
+    urlInput.value = url;
+    statusbar.textContent = 'Loading…';
+
+    if (addToHistory) {
+      navHistory.splice(historyIndex + 1);
+      navHistory.push(url);
+      historyIndex = navHistory.length - 1;
+    }
+    updateNavBtns();
+
+    homepage.style.display = 'none';
+    frame.style.display = 'block';
+    startLoadBar();
+    frame.src = proxyUrl(url);
+  }
+
+  function search(query) {
+    if (!query.trim()) return;
+    const url = engines[currentEngine].search(query);
+    navigate(url);
+    searchInput.value = query;
+    renderSearchResults(query);
+  }
+
+  let loadTimer;
+  function startLoadBar() {
+    clearTimeout(loadTimer);
+    loadBar.style.transition = 'none';
+    loadBar.style.width = '0%';
+    loadBar.classList.add('active');
+    requestAnimationFrame(() => {
+      loadBar.style.transition = 'width 2.5s ease';
+      loadBar.style.width = '80%';
+    });
+  }
+
+  function finishLoadBar() {
+    loadBar.style.transition = 'width 0.2s ease';
+    loadBar.style.width = '100%';
+    loadTimer = setTimeout(() => { loadBar.classList.remove('active'); loadBar.style.width = '0%'; }, 300);
+  }
+
+  frame.addEventListener('load', () => { finishLoadBar(); statusbar.textContent = ''; });
+
+  function updateNavBtns() {
+    btnBack.disabled    = historyIndex <= 0;
+    btnForward.disabled = historyIndex >= navHistory.length - 1;
+  }
+
+  btnBack.addEventListener('click', () => {
+    if (historyIndex > 0) { historyIndex--; navigate(navHistory[historyIndex], false); }
+  });
+  btnForward.addEventListener('click', () => {
+    if (historyIndex < navHistory.length - 1) { historyIndex++; navigate(navHistory[historyIndex], false); }
+  });
+  document.getElementById('btn-refresh').addEventListener('click', () => {
+    if (currentUrl) { frame.src = proxyUrl(currentUrl); startLoadBar(); }
+  });
+  document.getElementById('btn-home').addEventListener('click', () => {
+    frame.style.display = 'none';
+    frame.src = '';
+    homepage.style.display = 'flex';
+    urlInput.value = '';
+    currentUrl = '';
+    statusbar.textContent = '';
+  });
+
+  document.getElementById('url-form').addEventListener('submit', () => navigate(urlInput.value));
+  document.getElementById('go-btn').addEventListener('click', () => navigate(urlInput.value));
+  document.getElementById('search-form').addEventListener('submit', () => search(searchInput.value.trim()));
+  document.getElementById('search-btn').addEventListener('click', () => search(searchInput.value.trim()));
+
+  const homeInput = document.getElementById('home-search-input');
+  document.getElementById('home-search-btn').addEventListener('click', () => { if (homeInput.value.trim()) { navigate(homeInput.value); homeInput.value = ''; } });
+  homeInput.addEventListener('keydown', e => { if (e.key === 'Enter' && homeInput.value.trim()) { navigate(homeInput.value); homeInput.value = ''; } });
+
+  urlInput.addEventListener('focus', () => urlInput.select());
+
+  function renderSearchResults(query) {
+    resultsArea.innerHTML = `<div class="results-header">Results for "${query}"</div>`;
+    Object.entries(engines).forEach(([key, e]) => {
+      const el = document.createElement('div');
+      el.className = 'result-item';
+      el.innerHTML = `
+        <div class="result-domain">${key}.com</div>
+        <div class="result-title">Search "${query}" on ${e.label}</div>
+        <div class="result-snippet">Open ${e.label} search results in the viewport.</div>
+      `;
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.result-item').forEach(r => r.classList.remove('active'));
+        el.classList.add('active');
+        navigate(e.search(query));
+      });
+      resultsArea.appendChild(el);
+    });
+  }
+</script>
+</body>
+</html>
